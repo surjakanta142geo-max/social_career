@@ -1,18 +1,75 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useToast } from '../layout';
+import { getRecentJoiners } from '../actions/userActions';
+import { getJobs, createJob, deleteJob, updateJob } from '../actions/jobActions';
+import { getBlogs, createBlog, deleteBlog, updateBlog } from '../actions/blogActions';
+import { fileToDataUrl } from '@/utils/files/toDataUrl';
 
 export default function AdminDashboard() {
   const [activeView, setActiveView] = useState('dashboard');
   const [isJobModalOpen, setJobModalOpen] = useState(false);
   const [isBlogModalOpen, setBlogModalOpen] = useState(false);
-  const [isCourseModalOpen, setCourseModalOpen] = useState(false);
+  
+  const [users, setUsers] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [blogs, setBlogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  
   const showToast = useToast();
 
-  const handleAction = (msg: string, setter?: (state: boolean) => void) => {
-    showToast(msg);
-    if (setter) setter(false);
+  const fetchData = async () => {
+    setLoading(true);
+    const [u, j, b] = await Promise.all([
+      getRecentJoiners(),
+      getJobs(),
+      getBlogs()
+    ]);
+    setUsers(u);
+    setJobs(j);
+    setBlogs(b);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleCreateJob = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const file = (e.currentTarget.elements.namedItem('logo') as HTMLInputElement).files?.[0];
+    let logoUrl = '';
+    if (file) {
+        logoUrl = await fileToDataUrl(file);
+    }
+    const result = await createJob(formData, logoUrl);
+    if (result.success) {
+        showToast('Job created! ✅');
+        setJobModalOpen(false);
+        fetchData();
+    } else {
+        showToast(`Error: ${result.error} ❌`);
+    }
+  };
+
+  const handleCreateBlog = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const file = (e.currentTarget.elements.namedItem('thumbnail') as HTMLInputElement).files?.[0];
+    let thumbnailUrl = '';
+    if (file) {
+        thumbnailUrl = await fileToDataUrl(file);
+    }
+    const result = await createBlog(formData, thumbnailUrl);
+    if (result.success) {
+        showToast('Blog created! ✅');
+        setBlogModalOpen(false);
+        fetchData();
+    } else {
+        showToast(`Error: ${result.error} ❌`);
+    }
   };
 
   return (
@@ -22,36 +79,33 @@ export default function AdminDashboard() {
         <div className={`si ${activeView === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveView('dashboard')}>📊 Dashboard</div>
         <div className={`si ${activeView === 'jobs' ? 'active' : ''}`} onClick={() => setActiveView('jobs')}>💼 Job Listings</div>
         <div className={`si ${activeView === 'blogs' ? 'active' : ''}`} onClick={() => setActiveView('blogs')}>📝 Career Tips</div>
-        <div className={`si ${activeView === 'courses' ? 'active' : ''}`} onClick={() => setActiveView('courses')}>🎓 Courses</div>
         <div className={`si ${activeView === 'users' ? 'active' : ''}`} onClick={() => setActiveView('users')}>👥 Users</div>
 
         <h3>System</h3>
-        <div className={`si ${activeView === 'settings' ? 'active' : ''}`} onClick={() => setActiveView('settings')}>⚙️ Settings</div>
         <Link href="/" style={{ textDecoration: 'none' }}><div className="si" style={{ marginTop: '1rem' }}>🚪 Exit Admin</div></Link>
       </aside>
 
       <main className="amain">
         {activeView === 'dashboard' && (
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.4rem' }}>
-              <h2 style={{ fontSize: '1.3rem', fontWeight: 800 }}>Dashboard</h2>
-              <span style={{ color: 'var(--muted)', fontSize: '.85rem' }}>Welcome back, Admin 👋</span>
-            </div>
             <div className="krow">
-              <div className="kpi"><div className="kv">284</div><div className="kl">Active Jobs</div><div className="ku">↑ 12 this week</div></div>
-              <div className="kpi"><div className="kv">12,847</div><div className="kl">Registered Users</div><div className="ku">↑ 342 this week</div></div>
-              <div className="kpi"><div className="kv">18</div><div className="kl">Blog Posts</div><div className="ku">↑ 3 this week</div></div>
-              <div className="kpi"><div className="kv">6</div><div className="kl">Courses</div><div className="ku">Launch pending</div></div>
+              <div className="kpi"><div className="kv">{jobs.length}</div><div className="kl">Active Jobs</div></div>
+              <div className="kpi"><div className="kv">{users.length}</div><div className="kl">Recent Joiners</div></div>
+              <div className="kpi"><div className="kv">{blogs.length}</div><div className="kl">Blog Posts</div></div>
             </div>
             <div className="atable">
-              <div className="atable-h"><h3>Recent Applications</h3></div>
+              <div className="atable-h"><h3>Recent Joiners</h3></div>
               <table>
-                <thead><tr><th>Applicant</th><th>Job Title</th><th>Date</th><th>Status</th></tr></thead>
+                <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th></tr></thead>
                 <tbody>
-                  <tr><td>Amit Patel</td><td>Full Stack Developer</td><td>Today, 10:32am</td><td><span className="pill pg">Under Review</span></td></tr>
-                  <tr><td>Sneha Gupta</td><td>Banking Officer PO</td><td>Today, 9:14am</td><td><span className="pill py">Shortlisted</span></td></tr>
-                  <tr><td>Vikram Singh</td><td>UX Designer</td><td>Yesterday</td><td><span className="pill pg">Under Review</span></td></tr>
-                  <tr><td>Pooja Mehta</td><td>School Teacher TGT</td><td>Yesterday</td><td><span className="pill pm">Pending</span></td></tr>
+                  {users.map((u, i) => (
+                    <tr key={i}>
+                      <td>{u.name}</td>
+                      <td>{u.email}</td>
+                      <td><span className={`pill ${u.role === 'admin' ? 'pg' : 'py'}`}>{u.role}</span></td>
+                      <td>{new Date(u.created_at).toLocaleDateString()}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -68,9 +122,18 @@ export default function AdminDashboard() {
               <table>
                 <thead><tr><th>Job Title</th><th>Company</th><th>State</th><th>Type</th><th>Status</th><th>Action</th></tr></thead>
                 <tbody>
-                  <tr><td>Full Stack Developer</td><td>Infosys BPM</td><td>Maharashtra</td><td>Full-time</td><td><span className="pill pg">Active</span></td><td><button className="btn btn-outline btn-sm" onClick={() => showToast('Editing…')}>Edit</button></td></tr>
-                  <tr><td>Banking PO 2024</td><td>PNB</td><td>Pan India</td><td>Government</td><td><span className="pill pg">Active</span></td><td><button className="btn btn-outline btn-sm" onClick={() => showToast('Editing…')}>Edit</button></td></tr>
-                  <tr><td>Android Developer</td><td>Swiggy Tech</td><td>Karnataka</td><td>Full-time</td><td><span className="pill pm">Draft</span></td><td><button className="btn btn-primary btn-sm" onClick={() => showToast('Published! ✅')}>Publish</button></td></tr>
+                  {jobs.map(j => (
+                    <tr key={j.id}>
+                      <td>{j.title}</td>
+                      <td>{j.company_name}</td>
+                      <td>{j.state}</td>
+                      <td>{j.job_type}</td>
+                      <td><span className={`pill ${j.status === 'published' ? 'pg' : 'pm'}`}>{j.status}</span></td>
+                      <td>
+                        <button className="btn btn-outline btn-sm" onClick={() => deleteJob(j.id).then(fetchData)}>Delete</button>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -87,57 +150,19 @@ export default function AdminDashboard() {
               <table>
                 <thead><tr><th>Title</th><th>Category</th><th>Author</th><th>Status</th><th>Action</th></tr></thead>
                 <tbody>
-                  <tr><td>10 Resume Mistakes…</td><td>Resume Writing</td><td>Priya Sharma</td><td><span className="pill pg">Published</span></td><td><button className="btn btn-outline btn-sm" onClick={() => showToast('Editing…')}>Edit</button></td></tr>
-                  <tr><td>SSC CGL 2024 Guide</td><td>Govt Jobs</td><td>Admin</td><td><span className="pill pm">Draft</span></td><td><button className="btn btn-primary btn-sm" onClick={() => showToast('Published! ✅')}>Publish</button></td></tr>
+                  {blogs.map(b => (
+                    <tr key={b.id}>
+                      <td>{b.title}</td>
+                      <td>{b.category}</td>
+                      <td>{b.author}</td>
+                      <td><span className={`pill ${b.status === 'published' ? 'pg' : 'pm'}`}>{b.status}</span></td>
+                      <td>
+                        <button className="btn btn-outline btn-sm" onClick={() => deleteBlog(b.id).then(fetchData)}>Delete</button>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
-            </div>
-          </div>
-        )}
-
-        {activeView === 'courses' && (
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.4rem' }}>
-              <h2 style={{ fontSize: '1.3rem', fontWeight: 800 }}>Courses</h2>
-              <button className="btn btn-primary" onClick={() => setCourseModalOpen(true)}>+ Add Course</button>
-            </div>
-            <div className="atable">
-              <table>
-                <thead><tr><th>Course</th><th>Category</th><th>Price</th><th>Status</th><th>Action</th></tr></thead>
-                <tbody>
-                  <tr><td>Python for Data Science</td><td>Programming</td><td>₹1,999</td><td><span className="pill py">Coming Soon</span></td><td><button className="btn btn-primary btn-sm" onClick={() => showToast('Launched! 🚀')}>Launch</button></td></tr>
-                  <tr><td>Job Readiness Bootcamp</td><td>Job Readiness</td><td>FREE</td><td><span className="pill py">Coming Soon</span></td><td><button className="btn btn-primary btn-sm" onClick={() => showToast('Launched! 🚀')}>Launch</button></td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {activeView === 'users' && (
-          <div>
-            <div style={{ marginBottom: '1.4rem' }}><h2 style={{ fontSize: '1.3rem', fontWeight: 800 }}>User Management</h2></div>
-            <div className="atable">
-              <table>
-                <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th><th>Status</th></tr></thead>
-                <tbody>
-                  <tr><td>Amit Patel</td><td>amit@email.com</td><td>Job Seeker</td><td>Jan 2024</td><td><span className="pill pg">Active</span></td></tr>
-                  <tr><td>TechIndia HR</td><td>hr@techindia.com</td><td>Recruiter</td><td>Nov 2023</td><td><span className="pill pg">Active</span></td></tr>
-                  <tr><td>Prof. Sharma</td><td>sharma@edu.in</td><td>Instructor</td><td>Dec 2023</td><td><span className="pill pg">Active</span></td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {activeView === 'settings' && (
-          <div>
-            <div style={{ marginBottom: '1.4rem' }}><h2 style={{ fontSize: '1.3rem', fontWeight: 800 }}>Site Settings</h2></div>
-            <div className="atable" style={{ padding: '1.4rem', maxWidth: '500px' }}>
-              <div className="mfg"><label>Site Name</label><input type="text" defaultValue="Social Career" /></div>
-              <div className="mfg"><label>Contact Email</label><input type="email" defaultValue="support@socialcareer.in" /></div>
-              <div className="mfg"><label>Tagline</label><input type="text" defaultValue="India's Career Growth Platform" /></div>
-              <div className="mfg"><label>Maintenance Mode</label><select><option>Off</option><option>On</option></select></div>
-              <button className="btn btn-primary" onClick={() => showToast('Settings saved! ✅')}>Save Changes</button>
             </div>
           </div>
         )}
@@ -146,36 +171,74 @@ export default function AdminDashboard() {
       {/* MODALS */}
       <div className={`mbg ${isJobModalOpen ? 'open' : ''}`}>
         <div className="mbox">
-          <div className="mhead"><h2>Post New Job</h2><button className="xbtn" onClick={() => setJobModalOpen(false)}>×</button></div>
-          <div className="mfg"><label>Job Title</label><input type="text" placeholder="e.g. Software Engineer – React" /></div>
-          <div className="mfg"><label>Company Name</label><input type="text" placeholder="e.g. Infosys" /></div>
-          <div className="mfg2"><div className="mfg"><label>State</label><select><option>Select State</option><option>Maharashtra</option><option>Karnataka</option><option>Delhi</option><option>Tamil Nadu</option><option>Gujarat</option><option>Pan India</option></select></div><div className="mfg"><label>City</label><input type="text" placeholder="Mumbai" /></div></div>
-          <div className="mfg2"><div className="mfg"><label>Job Type</label><select><option>Full-time</option><option>Part-time</option><option>Internship</option><option>Government</option></select></div><div className="mfg"><label>Work Mode</label><select><option>On-site</option><option>Remote</option><option>Hybrid</option></select></div></div>
-          <div className="mfg"><label>Salary</label><input type="text" placeholder="₹8L – ₹14L/yr" /></div>
-          <div className="mfg"><label>Job Description</label><textarea placeholder="Role, responsibilities, requirements…"></textarea></div>
-          <div className="mfg"><label>Last Date to Apply</label><input type="date" /></div>
-          <div style={{ display: 'flex', gap: '.6rem' }}><button className="btn btn-outline" style={{ flex: 1 }} onClick={() => handleAction('Saved as draft 📝', setJobModalOpen)}>Save Draft</button><button className="btn btn-primary" style={{ flex: 1 }} onClick={() => handleAction('Job published! ✅', setJobModalOpen)}>Publish Job</button></div>
+          <form onSubmit={handleCreateJob}>
+            <div className="mhead"><h2>Post New Job</h2><button type="button" className="xbtn" onClick={() => setJobModalOpen(false)}>×</button></div>
+            <div className="mfg"><label>Job Title</label><input name="title" type="text" placeholder="e.g. Software Engineer" required /></div>
+            <div className="mfg"><label>Company Name</label><input name="company_name" type="text" placeholder="e.g. Infosys" required /></div>
+            <div className="mfg"><label>Company Logo</label><input name="logo" type="file" accept="image/*" /></div>
+            <div className="mfg2">
+              <div className="mfg"><label>State</label>
+                <select name="state" required>
+                    <option value="Pan India">Pan India</option>
+                    <option value="Maharashtra">Maharashtra</option>
+                    <option value="Karnataka">Karnataka</option>
+                    <option value="Delhi">Delhi</option>
+                </select>
+              </div>
+              <div className="mfg"><label>City</label><input name="city" type="text" placeholder="Mumbai" required /></div>
+            </div>
+            <div className="mfg2">
+              <div className="mfg"><label>Job Type</label>
+                <select name="job_type" required>
+                    <option value="full-time">Full-time</option>
+                    <option value="part-time">Part-time</option>
+                    <option value="internship">Internship</option>
+                    <option value="government">Government</option>
+                </select>
+              </div>
+              <div className="mfg"><label>Work Mode</label>
+                <select name="work_mode" required>
+                    <option value="onsite">On-site</option>
+                    <option value="remote">Remote</option>
+                    <option value="hybrid">Hybrid</option>
+                </select>
+              </div>
+            </div>
+            <div className="mfg"><label>Salary</label><input name="salary" type="text" placeholder="₹8L – ₹14L/yr" /></div>
+            <div className="mfg"><label>Job Description</label><textarea name="description" placeholder="Role, responsibilities..."></textarea></div>
+            <div className="mfg"><label>Last Date to Apply</label><input name="last_date" type="date" /></div>
+            <div style={{ display: 'flex', gap: '.6rem' }}>
+              <button type="submit" name="status" value="draft" className="btn btn-outline" style={{ flex: 1 }}>Save Draft</button>
+              <button type="submit" name="status" value="published" className="btn btn-primary" style={{ flex: 1 }}>Publish Job</button>
+            </div>
+          </form>
         </div>
       </div>
 
       <div className={`mbg ${isBlogModalOpen ? 'open' : ''}`}>
         <div className="mbox">
-          <div className="mhead"><h2>Write New Blog</h2><button className="xbtn" onClick={() => setBlogModalOpen(false)}>×</button></div>
-          <div className="mfg"><label>Title</label><input type="text" placeholder="Blog headline…" /></div>
-          <div className="mfg2"><div className="mfg"><label>Category</label><select><option>Interview Prep</option><option>Resume Writing</option><option>Salary Tips</option><option>Govt Jobs</option><option>Freshers</option></select></div><div className="mfg"><label>Author</label><input type="text" placeholder="Author name" /></div></div>
-          <div className="mfg"><label>Content</label><textarea placeholder="Write your article…" style={{ minHeight: '130px' }}></textarea></div>
-          <div style={{ display: 'flex', gap: '.6rem' }}><button className="btn btn-outline" style={{ flex: 1 }} onClick={() => handleAction('Saved as draft 📝', setBlogModalOpen)}>Save Draft</button><button className="btn btn-primary" style={{ flex: 1 }} onClick={() => handleAction('Blog published! ✅', setBlogModalOpen)}>Publish</button></div>
-        </div>
-      </div>
-
-      <div className={`mbg ${isCourseModalOpen ? 'open' : ''}`}>
-        <div className="mbox">
-          <div className="mhead"><h2>Add New Course</h2><button className="xbtn" onClick={() => setCourseModalOpen(false)}>×</button></div>
-          <div className="mfg"><label>Course Name</label><input type="text" placeholder="e.g. Python for Data Science" /></div>
-          <div className="mfg2"><div className="mfg"><label>Category</label><select><option>Programming</option><option>Data Science</option><option>Design</option><option>Marketing</option><option>Business</option></select></div><div className="mfg"><label>Price (₹)</label><input type="number" placeholder="0 = free" /></div></div>
-          <div className="mfg"><label>Description</label><textarea placeholder="What will learners gain?"></textarea></div>
-          <div className="mfg2"><div className="mfg"><label>Launch Date</label><input type="date" /></div><div className="mfg"><label>Status</label><select><option>Coming Soon</option><option>Live</option><option>Draft</option></select></div></div>
-          <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => handleAction('Course saved! 🎓', setCourseModalOpen)}>Save Course</button>
+          <form onSubmit={handleCreateBlog}>
+            <div className="mhead"><h2>Write New Blog</h2><button type="button" className="xbtn" onClick={() => setBlogModalOpen(false)}>×</button></div>
+            <div className="mfg"><label>Title</label><input name="title" type="text" placeholder="Blog headline…" required /></div>
+            <div className="mfg"><label>Thumbnail</label><input name="thumbnail" type="file" accept="image/*" /></div>
+            <div className="mfg2">
+              <div className="mfg"><label>Category</label>
+                <select name="category" required>
+                    <option value="resume writing">Resume Writing</option>
+                    <option value="fresher guidance">Fresher Guidance</option>
+                    <option value="skill development">Skill Development</option>
+                    <option value="best courses">Best Courses</option>
+                    <option value="interview preparation">Interview Prep</option>
+                </select>
+              </div>
+              <div className="mfg"><label>Author</label><input name="author" type="text" placeholder="Author name" required /></div>
+            </div>
+            <div className="mfg"><label>Content</label><textarea name="content" placeholder="Write your article…" style={{ minHeight: '130px' }} required></textarea></div>
+            <div style={{ display: 'flex', gap: '.6rem' }}>
+                <button type="submit" name="status" value="draft" className="btn btn-outline" style={{ flex: 1 }}>Save Draft</button>
+                <button type="submit" name="status" value="published" className="btn btn-primary" style={{ flex: 1 }}>Publish</button>
+            </div>
+          </form>
         </div>
       </div>
     </div>

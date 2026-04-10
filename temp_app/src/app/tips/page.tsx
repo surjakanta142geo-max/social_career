@@ -1,13 +1,35 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Footer from '../components/Footer';
 import { useToast } from '../layout';
+import { getBlogs } from '../actions/blogActions';
+import BlogCard from '../components/BlogCard';
 
 export default function TipsPage() {
+    const [blogs, setBlogs] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('All');
-    const tabs = ['All', 'Interview', 'Salary', 'Networking', 'Remote Work', 'Career Change', 'Technology'];
+    const tabs = ['All', 'Interview prep', 'Resume writing', 'Salary Tips', 'Govt Jobs', 'Freshers', 'Skill development', 'Best courses'];
     const showToast = useToast();
+
+    const fetchBlogs = async () => {
+        setLoading(true);
+        const data = await getBlogs();
+        setBlogs(data);
+        setLoading(false);
+    };
+
+    useEffect(() => {
+        fetchBlogs();
+    }, []);
+
+    const filteredBlogs = activeTab === 'All' 
+        ? blogs 
+        : blogs.filter(blog => blog.category.toLowerCase() === activeTab.toLowerCase());
+
+    const featuredBlog = blogs.length > 0 ? blogs[0] : null;
+    const remainingBlogs = activeTab === 'All' ? blogs.slice(1) : filteredBlogs;
 
     return (
         <div>
@@ -21,7 +43,7 @@ export default function TipsPage() {
                 </div>
             </div>
 
-            <div className="ctabs">
+            <div className="ctabs" style={{ overflowX: 'auto', whiteSpace: 'nowrap', paddingBottom: '0.4rem' }}>
                 {tabs.map(tab => (
                     <button key={tab} className={`ctab ${activeTab === tab ? 'active' : ''}`} onClick={() => setActiveTab(tab)}>
                         {tab}
@@ -30,68 +52,44 @@ export default function TipsPage() {
             </div>
 
             <div className="section">
-                <div className="blog-featured" style={{ marginBottom: '1.2rem' }}>
-                    <div className="bf-img" style={{ background: 'linear-gradient(135deg,#1e3a2e,#0f1f18)' }}>👩💼</div>
-                    <div className="bf-body">
-                        <span className="bc bc-i">Interview</span>
-                        <h3>10 Tips for Acing Your Next Job Interview</h3>
-                        <p>Master the art of interviewing with these proven strategies that hiring managers love. From preparation to follow-up, we cover everything you need to know.</p>
-                        <div className="bf-meta">👤 Sarah Wilson · 📅 Jan 15, 2024 · 8 min read</div>
-                        <button className="read-more">Read More →</button>
+                {activeTab === 'All' && featuredBlog && (
+                    <div className="blog-featured" style={{ marginBottom: '1.2rem' }}>
+                        <div className="bf-img" style={{ 
+                            backgroundImage: featuredBlog.thumbnail ? `url(${featuredBlog.thumbnail})` : 'linear-gradient(135deg,#1e3a2e,#0f1f18)',
+                            backgroundSize: 'cover',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}>
+                             {!featuredBlog.thumbnail && '📋'}
+                        </div>
+                        <div className="bf-body">
+                            <span className="bc bc-i">{featuredBlog.category}</span>
+                            <h3>{featuredBlog.title}</h3>
+                            <p>{featuredBlog.content.substring(0, 160)}...</p>
+                            <div className="bf-meta">👤 {featuredBlog.author} · {new Date(featuredBlog.created_at).toLocaleDateString()}</div>
+                            <button className="read-more">Read More →</button>
+                        </div>
                     </div>
-                </div>
+                )}
 
                 <div className="bg3">
-                    <div className="bcard">
-                        <div className="bimg" style={{ background: 'linear-gradient(135deg,#2e1a0a,#1a0a00)' }}>💰</div>
-                        <div className="bbody">
-                            <span className="bc bc-s">Salary</span>
-                            <h3>How to Negotiate Your Salary Like a Pro</h3>
-                            <p>Earn 20% more with these proven negotiation tactics.</p>
-                            <div className="bmeta">👤 Michael Chen · 6 min read</div>
-                        </div>
-                    </div>
-                    <div className="bcard">
-                        <div className="bimg" style={{ background: 'linear-gradient(135deg,#0a1a2e,#050f1a)' }}>🔗</div>
-                        <div className="bbody">
-                            <span className="bc bc-n">Networking</span>
-                            <h3>Building Your Personal Brand on LinkedIn</h3>
-                            <p>Stand out and attract recruiters with an optimized profile.</p>
-                            <div className="bmeta">👤 Emily Brown · Jan 10 · 5 min read</div>
-                        </div>
-                    </div>
-                    <div className="bcard">
-                        <div className="bimg" style={{ background: 'linear-gradient(135deg,#1a2e1a,#0a1a0a)' }}>🏠</div>
-                        <div className="bbody">
-                            <span className="bc bc-r">Remote Work</span>
-                            <h3>Remote Work: Tips for Staying Productive</h3>
-                            <p>Proven strategies for maintaining work-life balance.</p>
-                            <div className="bmeta">👤 David Lee · 7 min read</div>
-                        </div>
-                    </div>
-                    <div className="bcard">
-                        <div className="bimg" style={{ background: 'linear-gradient(135deg,#2e1a2e,#1a0a1a)' }}>🔄</div>
-                        <div className="bbody">
-                            <span className="bc bc-c">Career Change</span>
-                            <h3>Career Transition: How to Switch Industries</h3>
-                            <p>Leverage transferable skills to make a successful move.</p>
-                            <div className="bmeta">👤 Jennifer Martinez · 10 min read</div>
-                        </div>
-                    </div>
-                    <div className="bcard">
-                        <div className="bimg" style={{ background: 'linear-gradient(135deg,#0a1a2e,#050f1a)' }}>🤖</div>
-                        <div className="bbody">
-                            <span className="bc bc-t">Technology</span>
-                            <h3>The Future of AI in the Workplace</h3>
-                            <p>How AI is reshaping jobs and what skills you need.</p>
-                            <div className="bmeta">👤 Alex Thompson · 9 min read</div>
-                        </div>
-                    </div>
+                    {loading ? (
+                        <p>Loading articles...</p>
+                    ) : remainingBlogs.length > 0 ? (
+                        remainingBlogs.map((blog: any) => (
+                            <BlogCard key={blog.id} blog={blog} />
+                        ))
+                    ) : (
+                        <p>No articles found for this category.</p>
+                    )}
                 </div>
 
-                <div className="load-more">
-                    <button className="btn btn-outline" onClick={() => showToast('Loading more…')}>Load More Articles</button>
-                </div>
+                {remainingBlogs.length > 6 && (
+                    <div className="load-more">
+                        <button className="btn btn-outline" onClick={() => showToast('Loading more…')}>Load More Articles</button>
+                    </div>
+                )}
             </div>
 
             <Footer />
