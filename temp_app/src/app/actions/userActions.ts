@@ -42,6 +42,40 @@ export async function updateProfile(formData: FormData) {
     return { success: true, warning }
 }
 
+export async function getAllUsers() {
+    const supabase = await createClient()
+    const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+    if (error) return []
+    return data
+}
+
+/** Admin-only: change a user's role (job_seeker | recruiter | admin). */
+export async function updateUserRole(userId: string, role: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'Not authenticated' }
+
+    const { data: me } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+    if (me?.role !== 'admin') return { error: 'Only admins can change roles' }
+
+    if (!['admin', 'recruiter', 'job_seeker'].includes(role)) {
+        return { error: 'Invalid role' }
+    }
+    // Guard: don't let an admin demote themselves (avoids locking out the panel).
+    if (userId === user.id && role !== 'admin') {
+        return { error: 'You cannot change your own admin role' }
+    }
+
+    const { error } = await supabase.from('profiles').update({ role }).eq('id', userId)
+    if (error) return { error: error.message }
+    revalidatePath('/admin')
+    return { success: true }
+}
+
 export async function getRecentJoiners() {
     const supabase = await createClient()
     const { data, error } = await supabase

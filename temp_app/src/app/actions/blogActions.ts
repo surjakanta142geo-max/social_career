@@ -62,9 +62,10 @@ export async function getRecentBlogs() {
   const { data, error } = await supabase
     .from('blogs')
     .select('*')
+    .eq('status', 'published')
     .order('created_at', { ascending: false })
     .limit(3)
-  
+
   if (error) return []
   return data
 }
@@ -85,4 +86,36 @@ export async function updateBlog(id: string, updates: any) {
     revalidatePath('/tips')
     revalidatePath('/admin')
     return { success: true }
+}
+
+/** Full edit of a blog with optional thumbnail replacement. */
+export async function editBlog(id: string, formData: FormData) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'Not authenticated' }
+
+    const updates: Record<string, any> = {
+        title: formData.get('title'),
+        category: formData.get('category'),
+        author: formData.get('author'),
+        content: formData.get('content'),
+    }
+    const status = formData.get('status') as string
+    if (status) updates.status = status
+
+    let warning: string | undefined
+    const file = formData.get('thumbnail') as File | null
+    if (file && file.size > 0) {
+        try {
+            updates.thumbnail = await uploadFile(file, 'blog-thumbnails')
+        } catch (e: any) {
+            warning = `Changes saved, but the new thumbnail upload failed (${e.message}).`
+        }
+    }
+
+    const { error } = await supabase.from('blogs').update(updates).eq('id', id)
+    if (error) return { error: error.message }
+    revalidatePath('/tips')
+    revalidatePath('/admin')
+    return { success: true, warning }
 }

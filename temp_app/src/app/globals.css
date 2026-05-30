@@ -1370,6 +1370,96 @@ tr:hover td {
   background: #dc2626;
 }
 
+/* ===== ADMIN TOOLBAR / FILTERS ===== */
+.atoolbar {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.1rem;
+}
+
+.ainput {
+  flex: 1;
+  min-width: 220px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: .85rem;
+  outline: none;
+}
+
+.ainput:focus {
+  border-color: var(--primary);
+}
+
+.afilters {
+  display: flex;
+  gap: .4rem;
+  flex-wrap: wrap;
+}
+
+.achip {
+  border: 1.5px solid var(--border);
+  background: #fff;
+  color: var(--muted);
+  border-radius: 100px;
+  padding: 6px 14px;
+  font-size: .8rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all .15s ease;
+}
+
+.achip:hover {
+  border-color: var(--primary);
+}
+
+.achip.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+.arole-select {
+  border: 1.5px solid var(--border);
+  border-radius: 7px;
+  padding: 5px 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: .8rem;
+  cursor: pointer;
+  background: #fff;
+}
+
+.aempty {
+  padding: 2.4rem 1rem;
+  text-align: center;
+  color: var(--muted);
+  font-size: .9rem;
+}
+
+.auser {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.auser-av {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--light);
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .9rem;
+  flex: 0 0 auto;
+}
+
 /* MODALS */
 .mbg {
   position: fixed;

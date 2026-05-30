@@ -87,6 +87,15 @@ CREATE POLICY "Public profiles are viewable by everyone" ON profiles FOR SELECT 
 CREATE POLICY "Users can insert their own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
 CREATE POLICY "Users can update their own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
 
+-- SECURITY DEFINER helper so admin checks on the profiles table itself don't
+-- recurse through RLS. Used by the admin user-management feature.
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS boolean
+LANGUAGE sql SECURITY DEFINER STABLE
+AS $$ SELECT EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'); $$;
+
+CREATE POLICY "Admins can update any profile" ON profiles FOR UPDATE USING (public.is_admin());
+
 CREATE POLICY "Published jobs are viewable by everyone" ON jobs FOR SELECT USING (status = 'published');
 CREATE POLICY "All jobs viewable by admin" ON jobs FOR SELECT USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
 CREATE POLICY "Recruiters can manage their own jobs" ON jobs FOR ALL USING (created_by = auth.uid());

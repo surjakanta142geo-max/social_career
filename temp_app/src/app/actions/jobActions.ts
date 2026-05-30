@@ -102,6 +102,46 @@ export async function reviewJob(id: string, decision: 'approve' | 'reject') {
   return { success: true, status }
 }
 
+/** Full edit of a job (admin or owning recruiter via RLS). Supports optional logo replacement. */
+export async function editJob(id: string, formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated' }
+
+  const updates: Record<string, any> = {
+    title: formData.get('title'),
+    company_name: formData.get('company_name'),
+    state: formData.get('state'),
+    city: formData.get('city'),
+    job_type: formData.get('job_type'),
+    work_mode: formData.get('work_mode'),
+    salary: formData.get('salary'),
+    description: formData.get('description'),
+    last_date: (formData.get('last_date') as string) || null,
+    apply_link: (formData.get('apply_link') as string)?.trim() || null,
+    apply_email: (formData.get('apply_email') as string)?.trim() || null,
+  }
+  const status = formData.get('status') as string
+  if (status) updates.status = status
+
+  // Optional new logo — never block the save if the upload fails.
+  let warning: string | undefined
+  const logo = formData.get('logo') as File | null
+  if (logo && logo.size > 0) {
+    try {
+      updates.company_logo = await uploadFile(logo, 'job-logos')
+    } catch (e: any) {
+      warning = `Changes saved, but the new logo upload failed (${e.message}).`
+    }
+  }
+
+  const { error } = await supabase.from('jobs').update(updates).eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/jobs')
+  revalidatePath('/admin')
+  return { success: true, warning }
+}
+
 export async function getJobs(filters?: any) {
   const supabase = await createClient()
   let query = supabase.from('jobs').select('*').order('created_at', { ascending: false })

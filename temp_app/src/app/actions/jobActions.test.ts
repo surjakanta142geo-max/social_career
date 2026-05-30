@@ -69,7 +69,7 @@ vi.mock('@/utils/bunny/storage', () => ({
   },
 }));
 
-import { getJobs, getJobById, createJob, reviewJob } from './jobActions';
+import { getJobs, getJobById, createJob, editJob, reviewJob } from './jobActions';
 
 function jobForm(overrides: Record<string, string> = {}, withLogo = false) {
   const fd = new FormData();
@@ -171,6 +171,24 @@ describe('createJob – resilient logo upload', () => {
     const res = await createJob(jobForm({}, true));
     expect(res.warning).toBeUndefined();
     expect(lastInserted().company_logo).toBe('https://cdn/logo.png');
+  });
+});
+
+describe('editJob', () => {
+  it('updates fields and passes the chosen status through', async () => {
+    const res = await editJob('j1', jobForm({ status: 'published', title: 'Updated Title' }));
+    expect(res.success).toBe(true);
+    const upd = h.state.updated.at(-1);
+    expect(upd.table).toBe('jobs');
+    expect(upd.updates.status).toBe('published');
+    expect(upd.updates.title).toBe('Updated Title');
+  });
+
+  it('still saves with a warning when a new logo upload fails', async () => {
+    h.state.uploadShouldFail = true;
+    const res = await editJob('j1', jobForm({}, true));
+    expect(res.success).toBe(true);
+    expect(res.warning).toMatch(/logo upload failed/i);
   });
 });
 
