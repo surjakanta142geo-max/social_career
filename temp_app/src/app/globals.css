@@ -1370,6 +1370,126 @@ tr:hover td {
   background: #dc2626;
 }
 
+/* ===== ADMIN LOGIN (dedicated dark portal) ===== */
+.admin-auth-wrap {
+  min-height: calc(100vh - 64px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 5%;
+  background: radial-gradient(1200px 600px at 50% -10%, #1e293b 0%, #0b1220 55%, #060912 100%);
+}
+
+.admin-auth-card {
+  width: 100%;
+  max-width: 400px;
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 16px;
+  padding: 2.4rem 2rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .5);
+  text-align: center;
+  color: #e2e8f0;
+}
+
+.admin-auth-badge {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  margin: 0 auto 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.9rem;
+  background: linear-gradient(135deg, #4338ca, #7c3aed);
+  box-shadow: 0 8px 24px rgba(124, 58, 237, .4);
+}
+
+.admin-auth-card h2 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.admin-auth-sub {
+  color: #94a3b8;
+  font-size: .85rem;
+  margin-bottom: 1.6rem;
+}
+
+.admin-fg {
+  text-align: left;
+  margin-bottom: 1rem;
+}
+
+.admin-fg label {
+  display: block;
+  font-size: .78rem;
+  font-weight: 600;
+  color: #cbd5e1;
+  margin-bottom: .4rem;
+}
+
+.admin-fg input {
+  width: 100%;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 9px;
+  padding: 11px 13px;
+  color: #f1f5f9;
+  font-family: 'Inter', sans-serif;
+  font-size: .9rem;
+  outline: none;
+}
+
+.admin-fg input:focus {
+  border-color: #7c3aed;
+}
+
+.admin-fg input::placeholder {
+  color: #64748b;
+}
+
+.admin-auth-btn {
+  width: 100%;
+  margin-top: .4rem;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(135deg, #4338ca, #7c3aed);
+  color: #fff;
+  font-weight: 700;
+  font-size: .92rem;
+  font-family: 'Inter', sans-serif;
+  padding: 12px;
+  border-radius: 9px;
+  transition: opacity .15s ease;
+}
+
+.admin-auth-btn:hover {
+  opacity: .92;
+}
+
+.admin-auth-btn:disabled {
+  opacity: .6;
+  cursor: default;
+}
+
+.admin-auth-foot {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1.5rem;
+  font-size: .82rem;
+}
+
+.admin-auth-foot a {
+  color: #94a3b8;
+  text-decoration: none;
+}
+
+.admin-auth-foot a:hover {
+  color: #a78bfa;
+}
+
 /* ===== ADMIN TOOLBAR / FILTERS ===== */
 .atoolbar {
   display: flex;
