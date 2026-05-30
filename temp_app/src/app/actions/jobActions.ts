@@ -20,31 +20,42 @@ export async function createJob(formData: FormData) {
   const last_date = formData.get('last_date') as string
   const apply_link = (formData.get('apply_link') as string)?.trim() || null
   let apply_email = (formData.get('apply_email') as string)?.trim() || null
-  const status = (formData.get('status') as string) || 'published'
+  const requestedStatus = (formData.get('status') as string) || 'published'
+
+  // Look up the creator's role + email (single round-trip).
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, email')
+    .eq('id', user.id)
+    .single()
 
   // If no contact email is provided, fall back to the creator's account email
   // so candidates can always reach the recruiter when there is no apply link.
   if (!apply_email) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('email')
-      .eq('id', user.id)
-      .single()
     apply_email = profile?.email ?? user.email ?? null
   }
 
-  // Upload company logo to Bunny CDN (if provided)
+  // Moderation: drafts stay drafts; a "published" request from a recruiter goes
+  // into the admin review queue ("pending"). Admins publish directly.
+  let status = requestedStatus
+  if (requestedStatus === 'published' && profile?.role !== 'admin') {
+    status = 'pending'
+  }
+
+  // Upload company logo to Bunny CDN (if provided). This must NOT block the
+  // job from being posted — if the upload fails, save the job without a logo.
   let company_logo: string | undefined
+  let warning: string | undefined
   const logo = formData.get('logo') as File | null
   if (logo && logo.size > 0) {
     try {
       company_logo = await uploadFile(logo, 'job-logos')
     } catch (e: any) {
-      return { error: `Logo upload failed: ${e.message}` }
+      warning = `Job posted, but the logo upload failed (${e.message}). You can add a logo later by editing the job.`
     }
   }
 
-  const { data, error } = await supabase.from('jobs').insert([
+  const { error } = await supabase.from('jobs').insert([
     {
       title,
       company_name,
@@ -66,7 +77,29 @@ export async function createJob(formData: FormData) {
   if (error) return { error: error.message }
   revalidatePath('/jobs')
   revalidatePath('/admin')
-  return { success: true }
+  return { success: true, status, warning }
+}
+
+/** Admin moderation: approve or reject a job that is awaiting review. */
+export async function reviewJob(id: string, decision: 'approve' | 'reject') {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+  if (profile?.role !== 'admin') return { error: 'Only admins can review jobs' }
+
+  const status = decision === 'approve' ? 'published' : 'rejected'
+  const { error } = await supabase.from('jobs').update({ status }).eq('id', id)
+  if (error) return { error: error.message }
+
+  revalidatePath('/jobs')
+  revalidatePath('/admin')
+  return { success: true, status }
 }
 
 export async function getJobs(filters?: any) {
@@ -111,9 +144,10 @@ export async function getRecentJobs() {
   const { data, error } = await supabase
     .from('jobs')
     .select('*')
+    .eq('status', 'published')
     .order('created_at', { ascending: false })
     .limit(6)
-  
+
   if (error) return []
   return data
 }

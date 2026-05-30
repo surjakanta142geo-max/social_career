@@ -57,7 +57,7 @@ export default function ProfilePage() {
     const formData = new FormData(e.currentTarget);
     const result = await updateProfile(formData);
     if (result.success) {
-      showToast('Profile updated! ✅');
+      showToast(result.warning ? result.warning : 'Profile updated! ✅');
       fetchData();
     } else {
       showToast(`Error: ${result.error} ❌`);
@@ -69,7 +69,15 @@ export default function ProfilePage() {
     const formData = new FormData(e.currentTarget);
     const result = await createJob(formData);
     if (result.success) {
-      showToast('Job posted! ✅');
+      showToast(
+        result.warning
+          ? result.warning
+          : result.status === 'pending'
+          ? 'Job submitted for admin review ⏳'
+          : result.status === 'draft'
+          ? 'Draft saved 💾'
+          : 'Job published! ✅',
+      );
       setJobModalOpen(false);
       fetchData();
     } else {
@@ -91,7 +99,7 @@ export default function ProfilePage() {
   if (!profile) return <div className="section"><p>Please login to view your profile.</p></div>;
 
   const publishedCount = myJobs.filter((j) => j.status === 'published').length;
-  const draftCount = myJobs.length - publishedCount;
+  const pendingCount = myJobs.filter((j) => j.status === 'pending').length;
 
   return (
     <div className="section">
@@ -150,7 +158,7 @@ export default function ProfilePage() {
             <div className="krow" style={{ marginBottom: '1.5rem' }}>
               <div className="kpi"><div className="kv">{myJobs.length}</div><div className="kl">Total Jobs</div></div>
               <div className="kpi"><div className="kv">{publishedCount}</div><div className="kl">Published</div></div>
-              <div className="kpi"><div className="kv">{draftCount}</div><div className="kl">Drafts</div></div>
+              <div className="kpi"><div className="kv" style={{ color: pendingCount > 0 ? '#ca8a04' : undefined }}>{pendingCount}</div><div className="kl">Pending Review</div></div>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '10px' }}>
@@ -171,7 +179,7 @@ export default function ProfilePage() {
                         <td><Link href={`/jobs/${j.id}`} style={{ color: 'inherit', textDecoration: 'none', fontWeight: 600 }}>{j.title}</Link></td>
                         <td>{j.city}{j.state ? `, ${j.state}` : ''}</td>
                         <td>{j.job_type}</td>
-                        <td><span className={`pill ${j.status === 'published' ? 'pg' : 'pm'}`}>{j.status}</span></td>
+                        <td><span className={`pill ${j.status === 'published' ? 'pg' : j.status === 'pending' ? 'py' : j.status === 'rejected' ? 'pr' : 'pm'}`}>{j.status}</span></td>
                         <td><button className="btn btn-outline btn-sm" onClick={() => handleDeleteJob(j.id)}>Delete</button></td>
                       </tr>
                     ))

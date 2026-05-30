@@ -23,13 +23,15 @@ export async function updateProfile(formData: FormData) {
         updates.org_name = (formData.get('org_name') as string) || null
     }
 
-    // Only upload/overwrite the avatar when a new file is provided
+    // Only upload/overwrite the avatar when a new file is provided. Don't block
+    // saving the rest of the profile if the avatar upload fails.
+    let warning: string | undefined
     const avatar = formData.get('avatar') as File | null
     if (avatar && avatar.size > 0) {
         try {
             updates.avatar = await uploadFile(avatar, 'avatars')
         } catch (e: any) {
-            return { error: `Avatar upload failed: ${e.message}` }
+            warning = `Profile saved, but the avatar upload failed (${e.message}).`
         }
     }
 
@@ -37,7 +39,7 @@ export async function updateProfile(formData: FormData) {
 
     if (error) return { error: error.message }
     revalidatePath('/profile')
-    return { success: true }
+    return { success: true, warning }
 }
 
 export async function getRecentJoiners() {

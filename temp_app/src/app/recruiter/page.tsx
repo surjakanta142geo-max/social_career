@@ -38,7 +38,15 @@ export default function RecruiterDashboard() {
     const formData = new FormData(e.currentTarget);
     const result = await createJob(formData);
     if (result.success) {
-        showToast('Job created! ✅');
+        showToast(
+            result.warning
+                ? result.warning
+                : result.status === 'pending'
+                ? 'Job submitted for admin review ⏳'
+                : result.status === 'draft'
+                ? 'Draft saved 💾'
+                : 'Job published! ✅',
+        );
         setJobModalOpen(false);
         fetchData();
     } else {
@@ -73,7 +81,7 @@ export default function RecruiterDashboard() {
                         <td>{j.company_name}</td>
                         <td>{j.state}</td>
                         <td>{j.job_type}</td>
-                        <td><span className={`pill ${j.status === 'published' ? 'pg' : 'pm'}`}>{j.status}</span></td>
+                        <td><span className={`pill ${j.status === 'published' ? 'pg' : j.status === 'pending' ? 'py' : j.status === 'rejected' ? 'pr' : 'pm'}`}>{j.status}</span></td>
                         <td>
                           <button className="btn btn-outline btn-sm" onClick={() => deleteJob(j.id).then(fetchData)}>Delete</button>
                         </td>

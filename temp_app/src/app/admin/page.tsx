@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useToast } from '../layout';
 import { getRecentJoiners } from '../actions/userActions';
-import { getJobs, createJob, deleteJob, updateJob } from '../actions/jobActions';
+import { getJobs, createJob, deleteJob, reviewJob } from '../actions/jobActions';
 import { getBlogs, createBlog, deleteBlog, updateBlog } from '../actions/blogActions';
 
 export default function AdminDashboard() {
@@ -40,8 +40,18 @@ export default function AdminDashboard() {
     const formData = new FormData(e.currentTarget);
     const result = await createJob(formData);
     if (result.success) {
-        showToast('Job created! ✅');
+        showToast(result.warning ? result.warning : 'Job published! ✅');
         setJobModalOpen(false);
+        fetchData();
+    } else {
+        showToast(`Error: ${result.error} ❌`);
+    }
+  };
+
+  const handleReviewJob = async (id: string, decision: 'approve' | 'reject') => {
+    const result = await reviewJob(id, decision);
+    if (result.success) {
+        showToast(decision === 'approve' ? 'Job approved & published ✅' : 'Job rejected ❌');
         fetchData();
     } else {
         showToast(`Error: ${result.error} ❌`);
@@ -53,13 +63,19 @@ export default function AdminDashboard() {
     const formData = new FormData(e.currentTarget);
     const result = await createBlog(formData);
     if (result.success) {
-        showToast('Blog created! ✅');
+        showToast(result.warning ? result.warning : 'Blog created! ✅');
         setBlogModalOpen(false);
         fetchData();
     } else {
         showToast(`Error: ${result.error} ❌`);
     }
   };
+
+  const pendingJobs = jobs.filter(j => j.status === 'pending').length;
+  const publishedJobs = jobs.filter(j => j.status === 'published').length;
+
+  const statusClass = (status: string) =>
+    status === 'published' ? 'pg' : status === 'pending' ? 'py' : status === 'rejected' ? 'pr' : 'pm';
 
   return (
     <div className="awrap">
@@ -78,7 +94,15 @@ export default function AdminDashboard() {
         {activeView === 'dashboard' && (
           <div>
             <div className="krow">
-              <div className="kpi"><div className="kv">{jobs.length}</div><div className="kl">Active Jobs</div></div>
+              <div className="kpi"><div className="kv">{publishedJobs}</div><div className="kl">Published Jobs</div></div>
+              <div
+                className="kpi"
+                style={pendingJobs > 0 ? { cursor: 'pointer', borderColor: '#ca8a04' } : undefined}
+                onClick={() => pendingJobs > 0 && setActiveView('jobs')}
+              >
+                <div className="kv" style={{ color: pendingJobs > 0 ? '#ca8a04' : undefined }}>{pendingJobs}</div>
+                <div className="kl">Pending Review</div>
+              </div>
               <div className="kpi"><div className="kv">{users.length}</div><div className="kl">Recent Joiners</div></div>
               <div className="kpi"><div className="kv">{blogs.length}</div><div className="kl">Blog Posts</div></div>
             </div>
@@ -104,7 +128,12 @@ export default function AdminDashboard() {
         {activeView === 'jobs' && (
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.4rem' }}>
-              <h2 style={{ fontSize: '1.3rem', fontWeight: 800 }}>Job Listings</h2>
+              <h2 style={{ fontSize: '1.3rem', fontWeight: 800 }}>
+                Job Listings
+                {pendingJobs > 0 && (
+                  <span className="pill py" style={{ marginLeft: '10px', fontSize: '.72rem' }}>{pendingJobs} pending review</span>
+                )}
+              </h2>
               <button className="btn btn-primary" onClick={() => setJobModalOpen(true)}>+ Post New Job</button>
             </div>
             <div className="atable">
@@ -117,9 +146,20 @@ export default function AdminDashboard() {
                       <td>{j.company_name}</td>
                       <td>{j.state}</td>
                       <td>{j.job_type}</td>
-                      <td><span className={`pill ${j.status === 'published' ? 'pg' : 'pm'}`}>{j.status}</span></td>
+                      <td><span className={`pill ${statusClass(j.status)}`}>{j.status}</span></td>
                       <td>
-                        <button className="btn btn-outline btn-sm" onClick={() => deleteJob(j.id).then(fetchData)}>Delete</button>
+                        <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap' }}>
+                          {j.status === 'pending' && (
+                            <>
+                              <button className="btn btn-primary btn-sm" onClick={() => handleReviewJob(j.id, 'approve')}>Accept</button>
+                              <button className="btn btn-sm" style={{ background: '#fee2e2', color: '#dc2626' }} onClick={() => handleReviewJob(j.id, 'reject')}>Reject</button>
+                            </>
+                          )}
+                          {j.status === 'rejected' && (
+                            <button className="btn btn-primary btn-sm" onClick={() => handleReviewJob(j.id, 'approve')}>Approve</button>
+                          )}
+                          <button className="btn btn-outline btn-sm" onClick={() => deleteJob(j.id).then(fetchData)}>Delete</button>
+                        </div>
                       </td>
                     </tr>
                   ))}
