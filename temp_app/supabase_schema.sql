@@ -35,10 +35,16 @@ CREATE TABLE IF NOT EXISTS jobs (
   salary TEXT,
   description TEXT,
   last_date DATE,
+  apply_link TEXT,   -- external application URL (company site / Google form). Opens in new tab.
+  apply_email TEXT,  -- fallback contact email when no apply_link is set (mailto the recruiter)
   status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'published')),
   created_by UUID REFERENCES profiles(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- For existing databases (CREATE TABLE IF NOT EXISTS won't add new columns):
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS apply_link TEXT;
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS apply_email TEXT;
 
 -- Create blogs table (Career Tips)
 CREATE TABLE IF NOT EXISTS blogs (

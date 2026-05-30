@@ -1,3 +1,5 @@
+import { normalizeBunnyPublicUrl } from './url';
+
 /**
  * Bunny Storage upload helper
  * Uses the Bunny Storage HTTP API to upload files from server actions.
@@ -35,8 +37,6 @@ export async function uploadFile(file: File, path: string): Promise<string> {
         throw new Error(`Bunny Storage upload failed: ${errorText}`);
     }
 
-    // Return the pull zone URL
-    // Ensure PULL_ZONE_URL doesn't end with a slash
-    const cleanPullZone = pullZoneUrl.endsWith('/') ? pullZoneUrl.slice(0, -1) : pullZoneUrl;
-    return `${cleanPullZone}/${path}/${filename}`;
+    // Return the public pull zone URL (protocol-normalised).
+    return normalizeBunnyPublicUrl(pullZoneUrl, path, filename);
 }

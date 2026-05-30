@@ -4,7 +4,6 @@ import { useToast } from '../layout';
 import { createClient } from '@/utils/supabase/client';
 import { updateProfile } from '../actions/userActions';
 import { getSavedItems } from '../actions/saveActions';
-import { fileToDataUrl } from '@/utils/files/toDataUrl';
 import JobCard from '../components/JobCard';
 import BlogCard from '../components/BlogCard';
 
@@ -12,6 +11,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<any>(null);
   const [savedJobs, setSavedJobs] = useState<any[]>([]);
   const [savedBlogs, setSavedBlogs] = useState<any[]>([]);
+  const [savedTab, setSavedTab] = useState<'jobs' | 'blogs'>('jobs');
   const [loading, setLoading] = useState(true);
   const showToast = useToast();
   const supabase = createClient();
@@ -43,12 +43,7 @@ export default function ProfilePage() {
   const handleUpdateProfile = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const file = (e.currentTarget.elements.namedItem('avatar') as HTMLInputElement).files?.[0];
-    let avatarUrl = profile?.avatar;
-    if (file) {
-        avatarUrl = await fileToDataUrl(file);
-    }
-    const result = await updateProfile(formData, avatarUrl);
+    const result = await updateProfile(formData);
     if (result.success) {
         showToast('Profile updated! ✅');
         fetchData();
@@ -97,30 +92,35 @@ export default function ProfilePage() {
 
         <h3 style={{ marginBottom: '1rem' }}>Saved Content</h3>
         <div className="tab-tog" style={{ maxWidth: '300px', marginBottom: '1.5rem' }}>
-            <button className="active">Saved Jobs</button>
-            <button onClick={() => showToast('Blogs tab clicked')}>Saved Blogs</button>
+            <button className={savedTab === 'jobs' ? 'active' : ''} onClick={() => setSavedTab('jobs')}>
+                Saved Jobs ({savedJobs.length})
+            </button>
+            <button className={savedTab === 'blogs' ? 'active' : ''} onClick={() => setSavedTab('blogs')}>
+                Saved Blogs ({savedBlogs.length})
+            </button>
         </div>
 
-        <div className="jlist">
-            {savedJobs.length > 0 ? (
-                savedJobs.map(job => (
-                    <JobCard key={job.id} job={job} isList={true} />
-                ))
-            ) : (
-                <p style={{ color: 'var(--muted)' }}>No jobs saved yet.</p>
-            )}
-        </div>
-
-        <h3 style={{ marginTop: '2rem', marginBottom: '1rem' }}>Saved Blogs</h3>
-        <div className="bg3">
-            {savedBlogs.length > 0 ? (
-                savedBlogs.map(blog => (
-                    <BlogCard key={blog.id} blog={blog} />
-                ))
-            ) : (
-                <p style={{ color: 'var(--muted)' }}>No blogs saved yet.</p>
-            )}
-        </div>
+        {savedTab === 'jobs' ? (
+            <div className="jlist">
+                {savedJobs.length > 0 ? (
+                    savedJobs.map(job => (
+                        <JobCard key={job.id} job={job} isList={true} />
+                    ))
+                ) : (
+                    <p style={{ color: 'var(--muted)' }}>No jobs saved yet.</p>
+                )}
+            </div>
+        ) : (
+            <div className="bg3">
+                {savedBlogs.length > 0 ? (
+                    savedBlogs.map(blog => (
+                        <BlogCard key={blog.id} blog={blog} />
+                    ))
+                ) : (
+                    <p style={{ color: 'var(--muted)' }}>No blogs saved yet.</p>
+                )}
+            </div>
+        )}
       </div>
     </div>
   );

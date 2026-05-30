@@ -5,11 +5,13 @@ import Footer from '../components/Footer';
 import { useToast } from '../layout';
 import { getBlogs } from '../actions/blogActions';
 import BlogCard from '../components/BlogCard';
+import SearchBar from '../components/SearchBar';
 
 export default function TipsPage() {
     const [blogs, setBlogs] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('All');
+    const [searchTerm, setSearchTerm] = useState('');
     const tabs = ['All', 'Interview prep', 'Resume writing', 'Salary Tips', 'Govt Jobs', 'Freshers', 'Skill development', 'Best courses'];
     const showToast = useToast();
 
@@ -24,23 +26,34 @@ export default function TipsPage() {
         fetchBlogs();
     }, []);
 
-    const filteredBlogs = activeTab === 'All' 
-        ? blogs 
-        : blogs.filter(blog => blog.category.toLowerCase() === activeTab.toLowerCase());
+    const term = searchTerm.trim().toLowerCase();
+    const searchedBlogs = term
+        ? blogs.filter(blog =>
+            (blog.title || '').toLowerCase().includes(term) ||
+            (blog.content || '').toLowerCase().includes(term) ||
+            (blog.category || '').toLowerCase().includes(term))
+        : blogs;
 
-    const featuredBlog = blogs.length > 0 ? blogs[0] : null;
-    const remainingBlogs = activeTab === 'All' ? blogs.slice(1) : filteredBlogs;
+    const filteredBlogs = activeTab === 'All'
+        ? searchedBlogs
+        : searchedBlogs.filter(blog => blog.category.toLowerCase() === activeTab.toLowerCase());
+
+    // Show a featured hero only on the default (no search, "All") view
+    const showFeatured = activeTab === 'All' && !term;
+    const featuredBlog = showFeatured && searchedBlogs.length > 0 ? searchedBlogs[0] : null;
+    const remainingBlogs = showFeatured ? searchedBlogs.slice(1) : filteredBlogs;
 
     return (
         <div>
             <div className="phero">
                 <h1>Career Tips & Insights</h1>
                 <p>Expert advice to accelerate your career journey</p>
-                <div className="sbar">
-                    <span style={{ padding: '0 4px 0 8px', color: '#94a3b8' }}>🔍</span>
-                    <input type="text" placeholder="Search articles…" />
-                    <button className="btn btn-primary" style={{ borderRadius: '8px' }}>Search</button>
-                </div>
+                <SearchBar
+                    variant="simple"
+                    placeholder="Search articles by title, content or category…"
+                    defaultKeyword={searchTerm}
+                    onSearch={({ keyword }) => setSearchTerm(keyword)}
+                />
             </div>
 
             <div className="ctabs" style={{ overflowX: 'auto', whiteSpace: 'nowrap', paddingBottom: '0.4rem' }}>

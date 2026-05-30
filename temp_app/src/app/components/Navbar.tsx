@@ -48,7 +48,6 @@ export default function Navbar() {
         </Link>
         <Link className={`nl ${pathname === '/' ? 'active' : ''}`} href="/">🏠 Home</Link>
         <Link className={`nl ${pathname === '/jobs' ? 'active' : ''}`} href="/jobs">💼 Jobs</Link>
-        <Link className={`nl ${pathname === '/courses' ? 'active' : ''}`} href="/courses">🎓 Courses</Link>
         <Link className={`nl ${pathname === '/tips' ? 'active' : ''}`} href="/tips">📖 Career Tips</Link>
 
         <div className="nav-right">
