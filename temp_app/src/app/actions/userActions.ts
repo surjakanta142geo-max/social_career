@@ -12,7 +12,16 @@ export async function updateProfile(formData: FormData) {
     const name = formData.get('name') as string
     const phone = formData.get('phone') as string
 
-    const updates: { name: string; phone: string; avatar?: string } = { name, phone }
+    const updates: Record<string, any> = { name, phone }
+
+    // Company / organisation fields are only present on the recruiter form.
+    // Use has() so the job-seeker form never nulls them out.
+    if (formData.has('company_name')) {
+        updates.company_name = (formData.get('company_name') as string) || null
+    }
+    if (formData.has('org_name')) {
+        updates.org_name = (formData.get('org_name') as string) || null
+    }
 
     // Only upload/overwrite the avatar when a new file is provided
     const avatar = formData.get('avatar') as File | null
