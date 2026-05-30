@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useToast } from '../layout';
 import { getJobs, createJob, deleteJob, updateJob } from '../actions/jobActions';
-import { fileToDataUrl } from '@/utils/files/toDataUrl';
 import { createClient } from '@/utils/supabase/client';
 
 export default function RecruiterDashboard() {
@@ -37,12 +36,7 @@ export default function RecruiterDashboard() {
   const handleCreateJob = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const file = (e.currentTarget.elements.namedItem('logo') as HTMLInputElement).files?.[0];
-    let logoUrl = '';
-    if (file) {
-        logoUrl = await fileToDataUrl(file);
-    }
-    const result = await createJob(formData, logoUrl);
+    const result = await createJob(formData);
     if (result.success) {
         showToast('Job created! ✅');
         setJobModalOpen(false);
@@ -132,6 +126,8 @@ export default function RecruiterDashboard() {
             <div className="mfg"><label>Salary</label><input name="salary" type="text" placeholder="₹8L – ₹14L/yr" /></div>
             <div className="mfg"><label>Job Description</label><textarea name="description" placeholder="Role, responsibilities..."></textarea></div>
             <div className="mfg"><label>Last Date to Apply</label><input name="last_date" type="date" /></div>
+            <div className="mfg"><label>Application Link (optional)</label><input name="apply_link" type="url" placeholder="https://company.com/careers or Google Form link" /></div>
+            <div className="mfg"><label>Contact Email (fallback if no link)</label><input name="apply_email" type="email" placeholder="recruiter@company.com — defaults to your account email" /></div>
             <div style={{ display: 'flex', gap: '.6rem' }}>
               <button type="submit" name="status" value="draft" className="btn btn-outline" style={{ flex: 1 }}>Save Draft</button>
               <button type="submit" name="status" value="published" className="btn btn-primary" style={{ flex: 1 }}>Publish Job</button>

@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { uploadFile } from '@/utils/bunny/storage'
 
-export async function updateProfile(formData: FormData, avatarUrl?: string) {
+export async function updateProfile(formData: FormData) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: 'Not authenticated' }
@@ -12,11 +12,19 @@ export async function updateProfile(formData: FormData, avatarUrl?: string) {
     const name = formData.get('name') as string
     const phone = formData.get('phone') as string
 
-    const { error } = await supabase.from('profiles').update({
-        name,
-        phone,
-        avatar: avatarUrl
-    }).eq('id', user.id)
+    const updates: { name: string; phone: string; avatar?: string } = { name, phone }
+
+    // Only upload/overwrite the avatar when a new file is provided
+    const avatar = formData.get('avatar') as File | null
+    if (avatar && avatar.size > 0) {
+        try {
+            updates.avatar = await uploadFile(avatar, 'avatars')
+        } catch (e: any) {
+            return { error: `Avatar upload failed: ${e.message}` }
+        }
+    }
+
+    const { error } = await supabase.from('profiles').update(updates).eq('id', user.id)
 
     if (error) return { error: error.message }
     revalidatePath('/profile')

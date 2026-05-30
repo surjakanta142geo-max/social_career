@@ -4,6 +4,7 @@ import { getRecentJobs } from './actions/jobActions';
 import { getRecentBlogs } from './actions/blogActions';
 import JobCard from './components/JobCard';
 import BlogCard from './components/BlogCard';
+import SearchBar from './components/SearchBar';
 
 export default async function Home() {
   const jobs = await getRecentJobs();
@@ -13,15 +14,11 @@ export default async function Home() {
     <div>
       <div className="hero-gradient">
         <h1>Your Career Journey<br />Starts Here</h1>
-        <p>Discover thousands of job opportunities, upskill with premium courses,<br />and get expert career guidance — all in one place.</p>
-        <div className="search-hero">
-          <span style={{ paddingLeft: '8px', color: '#94a3b8', fontSize: '.9rem' }}>🔍</span>
-          <input type="text" placeholder="Search jobs, courses, or career tips…" />
-          <button className="btn btn-primary" style={{ borderRadius: '8px' }}>Search</button>
-        </div>
+        <p>Discover thousands of job opportunities and get expert career guidance — all in one place.</p>
+        <SearchBar />
         <div className="hero-stats">
           <div className="hero-stat"><div className="num">10K+</div><div className="lbl">Active Jobs</div></div>
-          <div className="hero-stat"><div className="num">500+</div><div className="lbl">Courses</div></div>
+          <div className="hero-stat"><div className="num">2K+</div><div className="lbl">Companies</div></div>
           <div className="hero-stat"><div className="num">50K+</div><div className="lbl">Career Tips</div></div>
         </div>
       </div>
@@ -40,44 +37,6 @@ export default async function Home() {
           ) : (
             <p>No featured jobs at the moment. Check back later!</p>
           )}
-        </div>
-      </div>
-
-      {/* Popular Courses */}
-      <div className="section" style={{ background: '#fff' }}>
-        <div className="sec-head">
-          <div><h2>Popular Courses</h2><p>Upskill with industry-leading instructors</p></div>
-          <Link className="view-all" href="/courses">Explore All →</Link>
-        </div>
-        <div className="cg">
-          <div className="ccard">
-            <div className="cimg" style={{ background: 'linear-gradient(135deg,#1e3a5f,#0a1628)' }}>
-              💻<span className="cb-badge cb-best">Bestseller</span><span className="cb-cat">Development</span>
-            </div>
-            <div className="cbody">
-              <h3>Complete Web Development Bootcamp</h3>
-              <div className="inst">John Doe</div>
-              <div className="stars"><span className="rt">⭐ 4.8</span><span className="cnt">👥 15,420 · ⏱ 40 hrs</span></div>
-              <div className="cfoot">
-                <div className="price"><span className="cur">$99.99</span><span className="ori">$199.99</span></div>
-                <button className="btn btn-primary btn-sm">Enroll</button>
-              </div>
-            </div>
-          </div>
-          <div className="ccard">
-            <div className="cimg" style={{ background: 'linear-gradient(135deg,#1a2e1a,#0a1a0a)' }}>
-              📊<span className="cb-badge cb-live">▶ Live</span><span className="cb-cat">Data Science</span>
-            </div>
-            <div className="cbody">
-              <h3>Data Science with Python</h3>
-              <div className="inst">Jane Smith</div>
-              <div className="stars"><span className="rt">⭐ 4.9</span><span className="cnt">👥 12,350 · ⏱ 35 hrs</span></div>
-              <div className="cfoot">
-                <div className="price"><span className="cur">$89.99</span><span className="ori">$179.99</span></div>
-                <button className="btn btn-primary btn-sm">Enroll</button>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 

@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { uploadFile } from '@/utils/bunny/storage'
 
-export async function createBlog(formData: FormData, thumbnailUrl?: string) {
+export async function createBlog(formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Not authenticated' }
@@ -15,13 +15,24 @@ export async function createBlog(formData: FormData, thumbnailUrl?: string) {
   const author = (formData.get('author') as string) || 'Admin'
   const status = (formData.get('status') as string) || 'published'
 
+  // Upload thumbnail to Bunny CDN (if provided)
+  let thumbnail: string | undefined
+  const file = formData.get('thumbnail') as File | null
+  if (file && file.size > 0) {
+    try {
+      thumbnail = await uploadFile(file, 'blog-thumbnails')
+    } catch (e: any) {
+      return { error: `Thumbnail upload failed: ${e.message}` }
+    }
+  }
+
   const { data, error } = await supabase.from('blogs').insert([
     {
       title,
       category,
       content,
       author,
-      thumbnail: thumbnailUrl,
+      thumbnail,
       status,
       created_by: user.id
     }

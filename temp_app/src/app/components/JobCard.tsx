@@ -1,11 +1,26 @@
 "use client";
+import Link from 'next/link';
 import { useToast } from '../layout';
 import { toggleSaveItem } from '../actions/saveActions';
+import { resolveApplyTarget } from '@/utils/jobs';
+import { isRecent } from '@/utils/format';
 import { useState } from 'react';
 
 export default function JobCard({ job, isList }: { job: any, isList?: boolean }) {
   const showToast = useToast();
   const [isSaved, setIsSaved] = useState(false); // This should ideally come from initial data or a hook
+
+  const handleApply = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const target = resolveApplyTarget(job);
+    if (target.type === 'link') {
+      window.open(target.href, '_blank', 'noopener,noreferrer');
+    } else if (target.type === 'email') {
+      window.location.href = target.mailto;
+    } else {
+      showToast('No application method provided for this job. 🤷');
+    }
+  };
 
   const handleSave = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -42,7 +57,7 @@ export default function JobCard({ job, isList }: { job: any, isList?: boolean })
     }
   };
 
-  const isNew = new Date(job.created_at).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const isNew = isRecent(job.created_at);
 
   if (isList) {
     return (
@@ -52,7 +67,7 @@ export default function JobCard({ job, isList }: { job: any, isList?: boolean })
         </div>
         <div className="jrow-info">
           <div className="jtop">
-            <h3>{job.title}</h3>
+            <Link href={`/jobs/${job.id}`} style={{ textDecoration: 'none', color: 'inherit' }}><h3>{job.title}</h3></Link>
             {isNew && <span className="badge-new">New</span>}
           </div>
           <div className="co">{job.company_name}</div>
@@ -63,7 +78,7 @@ export default function JobCard({ job, isList }: { job: any, isList?: boolean })
           </div>
         </div>
         <div className="jrow-btns" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <button className="btn btn-primary btn-sm" onClick={() => showToast('Redirecting to apply... 🚀')}>Apply Now</button>
+          <button className="btn btn-primary btn-sm" onClick={handleApply}>Apply Now</button>
           <button className="btn btn-sm" style={{ background: 'var(--light)', color: 'var(--muted)', border: '1px solid var(--border)' }} onClick={handleSave}>
             {isSaved ? 'Saved 🔖' : 'Save'}
           </button>
@@ -81,7 +96,7 @@ export default function JobCard({ job, isList }: { job: any, isList?: boolean })
         </div>
         {isNew && <span className="badge-new">New</span>}
       </div>
-      <h3>{job.title}</h3>
+      <Link href={`/jobs/${job.id}`} style={{ textDecoration: 'none', color: 'inherit' }}><h3>{job.title}</h3></Link>
       <div className="co">{job.company_name}</div>
       <div className="meta-row">
         <span className="meta-t">📍 {job.city}</span>
@@ -89,7 +104,7 @@ export default function JobCard({ job, isList }: { job: any, isList?: boolean })
       </div>
       <div className="sal">{job.salary}</div>
       <div className="jcard-actions">
-        <button className="btn btn-primary btn-sm" onClick={() => showToast('Redirecting... 🚀')}>Apply Now</button>
+        <button className="btn btn-primary btn-sm" onClick={handleApply}>Apply Now</button>
         <div style={{ display: 'flex', gap: '0.4rem' }}>
             <button className="btn-save" onClick={handleSave}>{isSaved ? '🔖' : 'Save'}</button>
             <button className="btn-save" onClick={handleShare}>📤</button>

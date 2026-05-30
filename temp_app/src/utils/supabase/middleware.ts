@@ -35,14 +35,13 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (
-    !user &&
-    !request.nextUrl.pathname.startsWith('/login') &&
-    !request.nextUrl.pathname.startsWith('/signup') &&
-    !request.nextUrl.pathname.startsWith('/auth') &&
-    request.nextUrl.pathname !== '/'
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
+  // Public browsing (home, jobs, job details, career tips, auth) stays open like
+  // naukri.com. Only personal/management areas require a session.
+  const protectedPrefixes = ['/profile', '/admin', '/recruiter', '/post-job']
+  const isProtected = protectedPrefixes.some((p) => request.nextUrl.pathname.startsWith(p))
+
+  if (!user && isProtected) {
+    // no user on a protected route -> send them to login
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)

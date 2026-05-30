@@ -20,7 +20,6 @@ export default function Footer() {
                 <div className="fcol">
                     <h4>Quick Links</h4>
                     <Link href="/jobs">Browse Jobs</Link>
-                    <Link href="/courses">Explore Courses</Link>
                     <Link href="/tips">Career Tips</Link>
                     <Link href="#">Post a Job</Link>
                 </div>
