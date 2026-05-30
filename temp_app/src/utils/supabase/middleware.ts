@@ -37,17 +37,28 @@ export async function updateSession(request: NextRequest) {
 
   // Public browsing (home, jobs, job details, career tips, auth) stays open like
   // naukri.com. Only personal/management areas require a session.
-  const protectedPrefixes = ['/profile', '/admin', '/recruiter', '/post-job']
-  const isProtected = protectedPrefixes.some((p) => request.nextUrl.pathname.startsWith(p))
+  const path = request.nextUrl.pathname
 
-  if (!user && isProtected) {
-    // no user on a protected route -> send them to login
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
+  // The admin area has its OWN login page and redirect. /admin/login itself must
+  // stay public so we never loop back into it.
+  const isAdminLogin = path === '/admin/login'
+  const isAdminArea = path.startsWith('/admin') && !isAdminLogin
+  const otherProtected = ['/profile', '/recruiter', '/post-job'].some((p) => path.startsWith(p))
+
+  if (!user) {
+    if (isAdminArea) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/admin/login'
+      return NextResponse.redirect(url)
+    }
+    if (otherProtected) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      return NextResponse.redirect(url)
+    }
   }
 
-  // Role based redirection (placeholder logic)
+  // Role based redirection
   if (user) {
     const { data: profile } = await supabase
       .from('profiles')
@@ -55,19 +66,20 @@ export async function updateSession(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    if (request.nextUrl.pathname.startsWith('/admin') && profile?.role !== 'admin') {
+    // Non-admins (or signed-in-but-not-admin) hitting the admin area -> admin login.
+    if (isAdminArea && profile?.role !== 'admin') {
+        const url = request.nextUrl.clone()
+        url.pathname = '/admin/login'
+        return NextResponse.redirect(url)
+    }
+
+    if (path.startsWith('/recruiter') && profile?.role !== 'recruiter' && profile?.role !== 'admin') {
         const url = request.nextUrl.clone()
         url.pathname = '/'
         return NextResponse.redirect(url)
     }
 
-    if (request.nextUrl.pathname.startsWith('/recruiter') && profile?.role !== 'recruiter' && profile?.role !== 'admin') {
-        const url = request.nextUrl.clone()
-        url.pathname = '/'
-        return NextResponse.redirect(url)
-    }
-
-    if (request.nextUrl.pathname.startsWith('/post-job') && profile?.role !== 'recruiter' && profile?.role !== 'admin') {
+    if (path.startsWith('/post-job') && profile?.role !== 'recruiter' && profile?.role !== 'admin') {
         const url = request.nextUrl.clone()
         url.pathname = '/'
         return NextResponse.redirect(url)

@@ -90,19 +90,21 @@ export default function JobCard({ job, isList }: { job: any, isList?: boolean })
 
   return (
     <div className="jcard">
-      <div className="jc-top">
-        <div className="jc-logo">
-            {job.company_logo ? <img src={job.company_logo} alt={job.company_name} style={{ width: '40px', height: '40px', borderRadius: '8px' }} /> : '🏢'}
+      <Link href={`/jobs/${job.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
+        <div className="jc-top">
+          <div className="jc-logo">
+              {job.company_logo ? <img src={job.company_logo} alt={job.company_name} style={{ width: '40px', height: '40px', borderRadius: '8px' }} /> : '🏢'}
+          </div>
+          {isNew && <span className="badge-new">New</span>}
         </div>
-        {isNew && <span className="badge-new">New</span>}
-      </div>
-      <Link href={`/jobs/${job.id}`} style={{ textDecoration: 'none', color: 'inherit' }}><h3>{job.title}</h3></Link>
-      <div className="co">{job.company_name}</div>
-      <div className="meta-row">
-        <span className="meta-t">📍 {job.city}</span>
-        <span className="meta-t">💼 {job.job_type}</span>
-      </div>
-      <div className="sal">{job.salary}</div>
+        <h3>{job.title}</h3>
+        <div className="co">{job.company_name}</div>
+        <div className="meta-row">
+          <span className="meta-t">📍 {job.city}</span>
+          <span className="meta-t">💼 {job.job_type}</span>
+        </div>
+        <div className="sal">{job.salary}</div>
+      </Link>
       <div className="jcard-actions">
         <button className="btn btn-primary btn-sm" onClick={handleApply}>Apply Now</button>
         <div style={{ display: 'flex', gap: '0.4rem' }}>

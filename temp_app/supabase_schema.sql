@@ -37,7 +37,11 @@ CREATE TABLE IF NOT EXISTS jobs (
   last_date DATE,
   apply_link TEXT,   -- external application URL (company site / Google form). Opens in new tab.
   apply_email TEXT,  -- fallback contact email when no apply_link is set (mailto the recruiter)
-  status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'published')),
+  -- draft     -> recruiter saved but not submitted
+  -- pending   -> submitted, awaiting admin review
+  -- published -> approved by admin (publicly visible)
+  -- rejected  -> declined by admin
+  status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'pending', 'published', 'rejected')),
   created_by UUID REFERENCES profiles(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -45,6 +49,10 @@ CREATE TABLE IF NOT EXISTS jobs (
 -- For existing databases (CREATE TABLE IF NOT EXISTS won't add new columns):
 ALTER TABLE jobs ADD COLUMN IF NOT EXISTS apply_link TEXT;
 ALTER TABLE jobs ADD COLUMN IF NOT EXISTS apply_email TEXT;
+
+-- Widen the status check to support the admin review workflow.
+ALTER TABLE jobs DROP CONSTRAINT IF EXISTS jobs_status_check;
+ALTER TABLE jobs ADD CONSTRAINT jobs_status_check CHECK (status IN ('draft', 'pending', 'published', 'rejected'));
 
 -- Create blogs table (Career Tips)
 CREATE TABLE IF NOT EXISTS blogs (
@@ -79,9 +87,21 @@ CREATE POLICY "Public profiles are viewable by everyone" ON profiles FOR SELECT 
 CREATE POLICY "Users can insert their own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
 CREATE POLICY "Users can update their own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
 
+-- SECURITY DEFINER helper so admin checks on the profiles table itself don't
+-- recurse through RLS. Used by the admin user-management feature.
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS boolean
+LANGUAGE sql SECURITY DEFINER STABLE
+AS $$ SELECT EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'); $$;
+
+CREATE POLICY "Admins can update any profile" ON profiles FOR UPDATE USING (public.is_admin());
+
 CREATE POLICY "Published jobs are viewable by everyone" ON jobs FOR SELECT USING (status = 'published');
 CREATE POLICY "All jobs viewable by admin" ON jobs FOR SELECT USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
 CREATE POLICY "Recruiters can manage their own jobs" ON jobs FOR ALL USING (created_by = auth.uid());
+-- Admins can manage (approve / reject / edit / delete) any job, including ones
+-- they did not create — required for the review workflow.
+CREATE POLICY "Admin can manage all jobs" ON jobs FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
 
 CREATE POLICY "Published blogs are viewable by everyone" ON blogs FOR SELECT USING (status = 'published');
 CREATE POLICY "Admin can manage all blogs" ON blogs FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
